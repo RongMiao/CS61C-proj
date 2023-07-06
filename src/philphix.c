@@ -69,10 +69,13 @@ int main(int argc, char **argv) {
  */
 unsigned int stringHash(void *s) {
   // -- TODO --
-  fprintf(stderr, "need to implement stringHash\n");
-
+  //fprintf(stderr, "need to implement stringHash\n");
+    unsigned int hash = 0;
+    for(int i = 0; i < strlen((char*)s); i++) {
+        hash += (char)((char*)s)[i];
+    }
   /* To suppress compiler warning until you implement this function, */
-  return 0;
+  return hash;
 }
 
 /*
@@ -81,9 +84,49 @@ unsigned int stringHash(void *s) {
  */
 int stringEquals(void *s1, void *s2) {
   // -- TODO --
-  fprintf(stderr, "You need to implement stringEquals");
+  //fprintf(stderr, "You need to implement stringEquals");
+    
   /* To suppress compiler warning until you implement this function */
-  return 0;
+  return strcmp((char*)s1, (char*)s2);
+}
+
+
+int get_word(FILE *pf, char **buf) {
+    char c;
+    int length = 0;
+    int capacity = 5;
+    char *tmp = (char*)malloc(capacity * sizeof(char));
+    if(tmp == NULL)
+        exit(1);
+
+    while((c = fgetc(pf)) != EOF) {
+        //if(c == ' ' && c == '\n') {
+        if(isspace(c)) {
+            break;
+        } else {
+            //fprintf(stderr, "read c = %c\n", c);
+            if (length == capacity) {
+                capacity += 5;
+                tmp = realloc(tmp, capacity);
+                if(tmp == NULL)
+                    exit(1);
+            }
+            tmp[length] = c;
+            length++;
+        }
+    }
+
+    if(length == 0) {
+        *buf = NULL;
+    } else {
+        tmp = realloc(tmp, length + 1);
+        if(tmp == NULL)
+            exit(1);
+        tmp[length] = '\0';
+        //length++;
+        *buf = tmp;
+    }
+    return length;
 }
 
 /*
@@ -100,8 +143,29 @@ int stringEquals(void *s1, void *s2) {
  */
 void readDictionary(char *dictName) {
   // -- TODO --
-  fprintf(stderr, "You need to implement readDictionary\n");
+  //fprintf(stderr, "You need to implement readDictionary\n");
+    // 1 open file
+    FILE *pf = fopen(dictName, "r");
+    if (pf == NULL)
+        exit(61);
+    char *key, *value;
+    int len;
+    while(1) {
+        //fprintf(stderr, "--------key-------\n");
+        len = get_word(pf, &key);
+        //fprintf(stderr, "key len = %d, strlen = %ld\n", len, strlen(key));
+        if(len == 0)
+            break;
+        //fprintf(stderr, "--------word-------\n");
+        len = get_word(pf, &value);
+        //fprintf(stderr, "word len = %d, strlen = %ld\n", len, strlen(value));
+        if(len == 0)
+            exit(1);
+        insertData(dictionary, (void*)key, (void*)value);
+    }
+    //fprintf(stderr, "Dictionary loaded 22\n");
 }
+
 
 /*
  * This should process standard input (stdin) and perform replacements as 
@@ -127,5 +191,56 @@ void readDictionary(char *dictName) {
  */
 void processInput() {
   // -- TODO --
-  fprintf(stderr, "You need to implement processInput\n");
+    //fprintf(stderr, "You need to implement processInput\n");
+    char c;
+    char *str = NULL;
+    char *replace = NULL;
+    char *tmpReplace = NULL;
+    int length = 0;
+    int capacity = 0;
+    while((c = fgetc(stdin)) != EOF) {
+        if (str == NULL) {
+            fprintf(stdout, "--------------------\n");
+            capacity = 5;
+            str = malloc(sizeof(char) * 5);
+        }
+        // put c to str
+        if (length + 1 >= capacity) {
+            capacity += 5;
+            str = realloc(str, capacity);
+            if(str == NULL)
+                exit(1);
+        }
+        str[length] = c;
+        length++;
+
+        // put ‘\0' to str
+        str[length + 1] = '\0';
+        
+        //fprintf(stdout, "str = %s\n", str);
+
+        // end of word
+        if(isspace(c)) {
+            if(replace != NULL) {
+                memcpy(str, replace, strlen(replace));
+            }
+            fprintf(stdout, "%s", str);
+            if(str != NULL) {
+                free(str);
+                str = NULL;
+            }
+            length = 0;
+            replace = NULL;
+            tmpReplace = NULL;
+            //if(key != NULL) 
+            //    free(key);
+            continue;
+        }
+        
+        tmpReplace = (char*)findData(dictionary, (void*)str);
+        if(tmpReplace != NULL) {
+            replace = tmpReplace;
+            //fprintf(stdout, "replace = %s\n", replace);
+        }
+    }
 }
