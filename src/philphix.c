@@ -198,49 +198,86 @@ void processInput() {
     char *tmpReplace = NULL;
     int length = 0;
     int capacity = 0;
+    int keylen = 0;
+    char *tmpStr = NULL;
+    int i = 0;
     while((c = fgetc(stdin)) != EOF) {
         if (str == NULL) {
-            fprintf(stdout, "--------------------\n");
             capacity = 5;
             str = malloc(sizeof(char) * 5);
         }
-        // put c to str
+        // put c and '\0' to str
         if (length + 1 >= capacity) {
             capacity += 5;
             str = realloc(str, capacity);
             if(str == NULL)
                 exit(1);
         }
+        // put c
         str[length] = c;
         length++;
-
-        // put ‘\0' to str
+        // put '\0'
         str[length + 1] = '\0';
-        
-        //fprintf(stdout, "str = %s\n", str);
 
-        // end of word
+        // end of word (space or '\n'), now str is like "abc \0" or "abc\n\0"
+        // now print str and its replace
         if(isspace(c)) {
+            // if replace not equal null
             if(replace != NULL) {
-                memcpy(str, replace, strlen(replace));
-            }
-            fprintf(stdout, "%s", str);
+                // print replace
+                fprintf(stdout, "%s", replace);
+                // print left of str
+                fprintf(stdout, "%s", str + keylen);
+            } else
+                // print str
+                fprintf(stdout, "%s", str);
+            // free str
             if(str != NULL) {
                 free(str);
                 str = NULL;
             }
+            // reset other var
             length = 0;
             replace = NULL;
             tmpReplace = NULL;
-            //if(key != NULL) 
-            //    free(key);
+            keylen = 0;
             continue;
         }
-        
+        // find replace with current str
         tmpReplace = (char*)findData(dictionary, (void*)str);
         if(tmpReplace != NULL) {
             replace = tmpReplace;
-            //fprintf(stdout, "replace = %s\n", replace);
+            // save the keylen for print
+            keylen = strlen(str);
+            continue;
         }
+        // find replace with all but the first letter converted to lowercase
+        tmpStr = malloc(sizeof(char) * strlen(str) + 1);
+        memcpy(tmpStr, str, strlen(str) + 1);
+        for(i = 1; i < strlen(tmpStr); i++) {
+            if(!isspace(tmpStr[i]) && tmpStr[i] <= 90 && tmpStr[i] >= 65)
+                tmpStr[i] += 32;
+        }
+        tmpReplace = (char*)findData(dictionary, (void*)tmpStr);
+        if(tmpReplace != NULL) {
+            replace = tmpReplace;
+            keylen = strlen(str);
+            free(tmpStr);
+            tmpStr = NULL;
+            continue;
+        }
+        
+        // find replace with all letter converted to lowercase
+        if(!isspace(tmpStr[0]) && tmpStr[0] <= 90 && tmpStr[0] >= 65)
+            tmpStr[0] += 32;
+        tmpReplace = (char*)findData(dictionary, (void*)tmpStr);
+        if(tmpReplace != NULL) {
+            replace = tmpReplace;
+            keylen = strlen(str);
+            free(tmpStr);
+            tmpStr = NULL;
+            continue;
+        }
+
     }
 }
